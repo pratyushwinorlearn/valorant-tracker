@@ -1,4 +1,4 @@
-# Valorant Tracker (Tier 3 — HenrikDev API)
+# Valorant Tracker (HenrikDev API)
 
 Small-scale personal project: a few friends link their Riot ID, get a dashboard
 in the app, and a home screen widget showing rank + last match.
