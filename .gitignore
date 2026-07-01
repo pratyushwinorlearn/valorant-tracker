@@ -1,0 +1,9 @@
+# Ignore node_modules in both folders
+node_modules/
+
+# Ignore secret environment variables
+.env
+
+# Expo/React Native hidden folders
+.expo/
+*.apk
