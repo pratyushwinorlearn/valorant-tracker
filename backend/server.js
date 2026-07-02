@@ -64,19 +64,17 @@ function summarizeMatch(match, name, tag) {
 
   // Calculate advanced tactical metrics with bulletproof fallbacks
   const fallbackRounds = (myTeam?.roundsWon || 0) + (myTeam?.roundsLost || 0);
-  const roundsPlayed = match.metadata?.rounds_played || fallbackRounds || 20;
-  
-  const totalDamage = me.damage_made ?? me.stats?.damage ?? 3000;
-  const adr = Math.round(totalDamage / roundsPlayed);
+  const roundsPlayed = match.metadata?.rounds_played || fallbackRounds || 1; 
 
   const headshots = me.stats?.headshots || 0;
-  const bodyshots = me.stats?.bodyshots || 1;
+  const bodyshots = me.stats?.bodyshots || 0;
   const legshots = me.stats?.legshots || 0;
   const totalShots = headshots + bodyshots + legshots;
-  const hsPercent = Math.round((headshots / Math.max(1, totalShots)) * 100);
+  const hsPercent = totalShots > 0 ? Math.round((headshots / totalShots) * 100) : 0;
 
-  // Econ Rating: Damage dealt per 1000 credits spent 
-  const econRating = me.economy?.spent ? Math.round((totalDamage / me.economy.spent) * 1000) : Math.round(adr * 0.85);
+  // Swap ADR/Econ for the Gold Standard: ACS & KPR
+  const acs = Math.round((me.stats?.score || 0) / roundsPlayed);
+  const kpr = ((me.stats?.kills || 0) / roundsPlayed).toFixed(2);
 
   return {
     matchId: match.metadata?.match_id ?? match.metadata?.matchId,
@@ -91,9 +89,9 @@ function summarizeMatch(match, name, tag) {
     won: myTeam?.won ?? myTeam?.has_won ?? null,
     roundsWon: myTeam?.roundsWon ?? myTeam?.rounds_won ?? null,
     roundsLost: myTeam?.roundsLost ?? myTeam?.rounds_lost ?? null,
-    adr,
     hsPercent,
-    econRating,
+    acs, // Sent to widget
+    kpr, // Sent to widget
   };
 }
 
