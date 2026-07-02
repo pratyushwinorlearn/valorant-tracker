@@ -91,11 +91,10 @@ export default function ValorantWidget({ dashboard }) {
               <TextWidget text="ADR" style={styles.bentoMiniLabel} />
               <TextWidget text={`${lastMatch?.adr ?? 0}`} style={styles.bentoValueText} />
             </FlexWidget>
-          </FlexWidget>
-          
-          <FlexWidget style={styles.bentoBoxWide}>
-            <TextWidget text="ECON RATING" style={styles.bentoMiniLabel} />
-            <TextWidget text={`${lastMatch?.econRating ?? 0}`} style={styles.bentoValueText} />
+            <FlexWidget style={styles.bentoBox}>
+              <TextWidget text="ECON" style={styles.bentoMiniLabel} />
+              <TextWidget text={`${lastMatch?.econRating ?? 0}`} style={styles.bentoValueText} />
+            </FlexWidget>
           </FlexWidget>
         </FlexWidget>
 
@@ -207,8 +206,9 @@ const styles = {
     flexDirection: 'row',
     flex: 1,
     width: 'match_parent',
-    marginVertical: 10,
+    marginVertical: 4,
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   leftStreakSection: {
     flexDirection: 'column',
@@ -219,7 +219,7 @@ const styles = {
   streakVerticalBlock: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   badgeWin: {
     backgroundColor: '#1b4332', 
@@ -250,30 +250,22 @@ const styles = {
   },
   rightBentoGrid: {
     flexDirection: 'column',
-    flex: 1,
     justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   bentoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    justifyContent: 'flex-end',
   },
   bentoBox: {
     backgroundColor: '#202020',
     borderColor: '#2d2d2d',
     borderWidth: 1,
     borderRadius: 8,
-    padding: 6,
-    flex: 1,
-    marginHorizontal: 2,
-  },
-  bentoBoxWide: {
-    backgroundColor: '#202020',
-    borderColor: '#2d2d2d',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 6,
-    marginHorizontal: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginLeft: 6,
+    alignItems: 'center',
   },
   bentoMiniLabel: {
     color: '#737373',
@@ -284,7 +276,7 @@ const styles = {
     color: '#ffffff',
     fontSize: 13,
     fontWeight: 'bold',
-    marginTop: 1,
+    marginTop: 2,
   },
   matchContainer: {
     flexDirection: 'row',
