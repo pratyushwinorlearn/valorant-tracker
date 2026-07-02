@@ -12,7 +12,6 @@ if (!HENRIK_KEY) {
 
 const VALID_REGIONS = ['na', 'eu', 'ap', 'kr', 'latam', 'br'];
 
-// ---- tiny in-memory cache (fine for a handful of users) ----
 const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
 const cache = new Map();
 
@@ -26,7 +25,6 @@ function setCached(key, data) {
   cache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
-// ---- HenrikDev fetch helper ----
 async function henrikFetch(path) {
   const res = await fetch(`${HENRIK_BASE}${path}`, {
     headers: { Authorization: HENRIK_KEY },
@@ -47,36 +45,23 @@ function requireValidRegion(req, res) {
   return true;
 }
 
-// Pull out "my" row from a HenrikDev v4 match object.
-// NOTE: verify these field names against https://docs.henrikdev.xyz once you have
-// a real API key — HenrikDev has changed field names between versions before,
-// so the first real response is worth console.logging in full.
-// Pull out "my" row from a HenrikDev v4 match object.
 function summarizeMatch(match, name, tag) {
-  // 1. Safely find the player
   const me = match.players?.find(
     (p) => p.name?.toLowerCase() === name.toLowerCase() && p.tag?.toLowerCase() === tag.toLowerCase()
   );
   if (!me) return null;
 
-  // 2. Identify the player's team ID (Check both snake_case and camelCase)
   const myTeamId = me.team_id || me.teamId; 
   
-  // 3. Locate the correct team object
   let myTeam = null;
   if (match.teams && myTeamId) {
-    // Convert the numeric-keyed object {'0': {...}, '1': {...}} into a flat array.
-    // If it ever reverts to a true Array, Object.values() still handles it perfectly.
     const teamsList = Object.values(match.teams);
-    
-    // Find the team whose ID matches the player's team ID (case-insensitive)
     myTeam = teamsList.find((t) => {
       const tId = t.team_id || t.teamId || t.id;
       return tId && tId.toLowerCase() === myTeamId.toLowerCase();
     }) ?? null;
   }
 
-  // 4. Return the summary with highly resilient property fallbacks
   return {
     matchId: match.metadata?.match_id ?? match.metadata?.matchId,
     map: match.metadata?.map?.name ?? match.metadata?.map,
@@ -87,15 +72,13 @@ function summarizeMatch(match, name, tag) {
     deaths: me.stats?.deaths,
     assists: me.stats?.assists,
     score: me.stats?.score,
-    
-    // THE FIX: Check for v4 properties ('won', 'roundsWon') before falling back to v3
     won: myTeam?.won ?? myTeam?.has_won ?? null,
     roundsWon: myTeam?.roundsWon ?? myTeam?.rounds_won ?? null,
     roundsLost: myTeam?.roundsLost ?? myTeam?.rounds_lost ?? null,
   };
 }
 
-// GET /api/dashboard/:region/:name/:tag  -> rank + last match in one call (what the widget uses)
+// GET /api/dashboard/:region/:name/:tag -> Handles rank, last match, and recent 5 streak
 app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
   if (!requireValidRegion(req, res)) return;
   const { region, name, tag } = req.params;
@@ -107,11 +90,18 @@ app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
   try {
     const [mmr, matches] = await Promise.all([
       henrikFetch(`/valorant/v3/mmr/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`),
-      henrikFetch(`/valorant/v4/matches/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=1`),
+      // Changed size=1 to size=5 to grab history data for your streak block row
+      henrikFetch(`/valorant/v4/matches/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=5`),
     ]);
 
-    const lastMatchRaw = matches?.data?.[0];
-    const lastMatch = lastMatchRaw ? summarizeMatch(lastMatchRaw, name, tag) : null;
+    const simplifiedMatches = (matches?.data || [])
+      .map((m) => summarizeMatch(m, name, tag))
+      .filter(Boolean);
+
+    const lastMatch = simplifiedMatches[0] || null;
+    
+    // Map out an array of booleans representing wins/losses [true, false, true...]
+    const streak = simplifiedMatches.slice(0, 5).map((m) => m.won);
 
     const payload = {
       account: { name, tag, region },
@@ -121,6 +111,7 @@ app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
         elo: mmr?.data?.current?.elo ?? null,
       },
       lastMatch,
+      streak, 
       updatedAt: new Date().toISOString(),
     };
 
@@ -132,7 +123,6 @@ app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
   }
 });
 
-// GET /api/matches/:region/:name/:tag?size=5 -> recent match list
 app.get('/api/matches/:region/:name/:tag', async (req, res) => {
   if (!requireValidRegion(req, res)) return;
   const { region, name, tag } = req.params;
@@ -158,7 +148,6 @@ app.get('/api/matches/:region/:name/:tag', async (req, res) => {
   }
 });
 
-// GET /api/account/:name/:tag -> resolve a Riot ID, useful to validate on the link screen
 app.get('/api/account/:name/:tag', async (req, res) => {
   const { name, tag } = req.params;
   const cacheKey = `account:${name}:${tag}`.toLowerCase();

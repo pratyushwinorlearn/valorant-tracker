@@ -1,88 +1,134 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
-export default function ValorantWidget({ data }) {
-  if (!data) return null;
+export default function ValorantWidget({ dashboard }) {
+  if (!dashboard || !dashboard.account) {
+    return (
+      <FlexWidget style={styles.container}>
+        <FlexWidget style={styles.centerBox}>
+          <TextWidget text="VALO STATS" style={styles.fallbackTitle} />
+          <TextWidget text="Open app to link Riot ID & sync rank" style={styles.fallbackSub} />
+        </FlexWidget>
+      </FlexWidget>
+    );
+  }
 
-  const { account, rank, lastMatch } = data;
+  const { account, rank, lastMatch, streak } = dashboard;
   const kdr = lastMatch ? (lastMatch.kills / Math.max(1, lastMatch.deaths)).toFixed(2) : '0.00';
+  const outcomeText = lastMatch ? (lastMatch.won ? 'VICTORY' : 'DEFEAT') : 'N/A';
+  const outcomeColor = lastMatch ? (lastMatch.won ? '#4ade80' : '#f87171') : '#ffffff';
 
   return (
-    <View style={styles.container}>
+    <FlexWidget style={styles.container}>
       {/* Header Section */}
-      <View style={styles.header}>
-        <View>
-          <View style={styles.row}>
-            <Text style={styles.name}>{account.name}</Text>
-            <Text style={styles.tag}>#{account.tag}</Text>
-          </View>
-          <Text style={styles.region}>{account.region.toUpperCase()} SERVER</Text>
-        </View>
-        <View style={styles.rightAlign}>
-          <Text style={styles.tier}>{rank.tier}</Text>
-          <Text style={styles.rr}>{rank.rr} RR</Text>
-        </View>
-      </View>
+      <FlexWidget style={styles.header}>
+        <FlexWidget style={styles.columnLeft}>
+          <FlexWidget style={styles.row}>
+            <TextWidget text={account.name} style={styles.name} />
+            <TextWidget text={`#${account.tag}`} style={styles.tag} />
+          </FlexWidget>
+          <TextWidget text={`${account.region.toUpperCase()} SERVER`} style={styles.region} />
+        </FlexWidget>
+
+        <FlexWidget style={styles.rightAlign}>
+          <TextWidget text={rank.tier || 'UNRANKED'} style={styles.tier} />
+          <TextWidget text={`${rank.rr || 0} RR`} style={styles.rr} />
+        </FlexWidget>
+      </FlexWidget>
+
+      {/* Center Void: Translucent Map Watermark + 5 Match History Badges */}
+      <FlexWidget style={styles.middleContainer}>
+        <TextWidget 
+          text={(lastMatch?.map || 'VALORANT').toUpperCase()} 
+          style={styles.watermarkText} 
+        />
+        
+        <FlexWidget style={styles.streakRow}>
+          {streak && streak.length > 0 ? (
+            streak.map((won, idx) => (
+              <FlexWidget key={idx} style={won ? styles.badgeWin : styles.badgeLoss}>
+                <TextWidget text={won ? "W" : "L"} style={styles.badgeText} />
+              </FlexWidget>
+            ))
+          ) : (
+            <TextWidget text="No recent match data" style={styles.noStreakText} />
+          )}
+        </FlexWidget>
+      </FlexWidget>
 
       {/* Match Snapshot Section */}
       {lastMatch && (
-        <View style={styles.matchContainer}>
-          <View style={styles.column}>
-            <Text style={styles.label}>LAST MATCH</Text>
-            <Text style={styles.value}>{lastMatch.map}</Text>
-            <Text style={styles.subtext}>{lastMatch.agent}</Text>
-          </View>
+        <FlexWidget style={styles.matchContainer}>
+          <FlexWidget style={styles.column}>
+            <TextWidget text="LAST MATCH" style={styles.label} />
+            <TextWidget text={lastMatch.map} style={styles.value} />
+            <TextWidget text={lastMatch.agent} style={styles.subtext} />
+          </FlexWidget>
 
-          <View style={styles.columnCenter}>
-            <Text style={styles.label}>PERFORMANCE</Text>
-            <Text style={styles.value}>
-              {lastMatch.kills}/{lastMatch.deaths}/{lastMatch.assists}
-            </Text>
-            <Text style={styles.subtext}>KDR: {kdr}</Text>
-          </View>
+          <FlexWidget style={styles.columnCenter}>
+            <TextWidget text="PERFORMANCE" style={styles.label} />
+            <TextWidget 
+              text={`${lastMatch.kills}/${lastMatch.deaths}/${lastMatch.assists}`} 
+              style={styles.value} 
+            />
+            <TextWidget text={`KDR: ${kdr}`} style={styles.subtext} />
+          </FlexWidget>
 
-          <View style={styles.columnRight}>
-            <Text style={styles.label}>OUTCOME</Text>
-            <Text style={[styles.value, lastMatch.won ? styles.textWin : styles.textLoss]}>
-              {lastMatch.won ? 'VICTORY' : 'DEFEAT'}
-            </Text>
-            <Text style={styles.subtext}>{lastMatch.score} pts</Text>
-          </View>
-        </View>
+          <FlexWidget style={styles.columnRight}>
+            <TextWidget text="OUTCOME" style={styles.label} />
+            <TextWidget text={outcomeText} style={{ ...styles.value, color: outcomeColor }} />
+            <TextWidget text={`${lastMatch.score} pts`} style={styles.subtext} />
+          </FlexWidget>
+        </FlexWidget>
       )}
-    </View>
+    </FlexWidget>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
+    height: 'match_parent',
+    width: 'match_parent',
     backgroundColor: '#171717',
     borderRadius: 16,
-    padding: 20,
-    marginVertical: 10,
-    borderWidth: 1,
+    padding: 16,
     borderColor: '#262626',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8, // For Android shadow
+    borderWidth: 1,
+    justifyContent: 'space-between', 
+  },
+  centerBox: {
+    height: 'match_parent',
+    width: 'match_parent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fallbackTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  fallbackSub: {
+    color: '#a3a3a3',
+    fontSize: 12,
+    marginTop: 6,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    width: 'match_parent',
+  },
+  columnLeft: {
+    flexDirection: 'column',
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
   },
   name: {
     color: '#ffffff',
     fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontWeight: 'bold',
   },
   tag: {
     color: '#737373',
@@ -93,59 +139,107 @@ const styles = StyleSheet.create({
     color: '#a3a3a3',
     fontSize: 10,
     marginTop: 2,
-    letterSpacing: 1,
   },
   rightAlign: {
+    flexDirection: 'column',
     alignItems: 'flex-end',
   },
   tier: {
     color: '#e5e5e5',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: 'bold',
   },
   rr: {
     color: '#a3a3a3',
     fontSize: 12,
   },
+  middleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 'match_parent',
+    marginVertical: 4,
+  },
+  watermarkText: {
+    color: '#222222', // Subtle gray contrast matching the dark #171717 theme
+    fontSize: 36,
+    fontWeight: 'bold',
+    letterSpacing: 6,
+    textAlign: 'center',
+  },
+  streakRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 'match_parent',
+    marginTop: -22, // Pulled slightly upward to overlap beautifully over the watermark text
+  },
+  badgeWin: {
+    backgroundColor: '#1b4332', 
+    borderColor: '#4ade80',
+    borderWidth: 1,
+    borderRadius: 6,
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 3,
+  },
+  badgeLoss: {
+    backgroundColor: '#641e16', 
+    borderColor: '#f87171',
+    borderWidth: 1,
+    borderRadius: 6,
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 3,
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  noStreakText: {
+    color: '#737373',
+    fontSize: 11,
+  },
   matchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#262626',
-    paddingTop: 12,
+    width: 'match_parent',
+    borderTopWidth: 1, 
+    borderColor: '#262626',
+    paddingTop: 10,
   },
   column: {
+    flexDirection: 'column',
     flex: 1,
   },
   columnCenter: {
+    flexDirection: 'column',
     flex: 1,
     alignItems: 'center',
   },
   columnRight: {
+    flexDirection: 'column',
     flex: 1,
     alignItems: 'flex-end',
   },
   label: {
     color: '#737373',
     fontSize: 10,
-    fontWeight: '600',
-    marginBottom: 4,
-    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   value: {
     color: '#ffffff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: 'bold',
   },
   subtext: {
     color: '#a3a3a3',
     fontSize: 12,
     marginTop: 2,
   },
-  textWin: {
-    color: '#4ade80', // Tailwind green-400 equivalent
-  },
-  textLoss: {
-    color: '#f87171', // Tailwind red-400 equivalent
-  },
-});
+};
