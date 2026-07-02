@@ -1,6 +1,21 @@
 import React from 'react';
 import { FlexWidget, TextWidget } from 'react-native-android-widget';
 
+// Helper function to return thematic colors based on competitive tier
+function getRankTheme(tierName) {
+  const tier = (tierName || 'UNRANKED').toUpperCase();
+  if (tier.includes('IRON')) return { text: '#a3a3a3', bg: '#a3a3a315', border: '#a3a3a340' };
+  if (tier.includes('BRONZE')) return { text: '#b45309', bg: '#b4530915', border: '#b4530940' };
+  if (tier.includes('SILVER')) return { text: '#cbd5e1', bg: '#cbd5e115', border: '#cbd5e140' };
+  if (tier.includes('GOLD')) return { text: '#eab308', bg: '#eab30820', border: '#eab30860' };
+  if (tier.includes('PLATINUM')) return { text: '#22d3ee', bg: '#22d3ee15', border: '#22d3ee50' };
+  if (tier.includes('DIAMOND')) return { text: '#c084fc', bg: '#c084fc15', border: '#c084fc50' };
+  if (tier.includes('ASCENDANT')) return { text: '#22c55e', bg: '#22c55e20', border: '#22c55e60' };
+  if (tier.includes('IMMORTAL')) return { text: '#f43f5e', bg: '#f43f5e20', border: '#f43f5e60' };
+  if (tier.includes('RADIANT')) return { text: '#facc15', bg: '#facc1525', border: '#facc1570' };
+  return { text: '#ffffff', bg: '#ffffff10', border: '#ffffff20' };
+}
+
 export default function ValorantWidget({ dashboard }) {
   if (!dashboard || !dashboard.account) {
     return (
@@ -18,6 +33,9 @@ export default function ValorantWidget({ dashboard }) {
   const outcomeText = lastMatch ? (lastMatch.won ? 'VICTORY' : 'DEFEAT') : 'N/A';
   const outcomeColor = lastMatch ? (lastMatch.won ? '#4ade80' : '#f87171') : '#ffffff';
 
+  // Get dynamic coloring setup for competitive rank display
+  const rankTheme = getRankTheme(rank.tier);
+
   return (
     <FlexWidget style={styles.container}>
       {/* Header Section */}
@@ -30,30 +48,57 @@ export default function ValorantWidget({ dashboard }) {
           <TextWidget text={`${account.region.toUpperCase()} SERVER`} style={styles.region} />
         </FlexWidget>
 
-        <FlexWidget style={styles.rightAlign}>
-          <TextWidget text={rank.tier || 'UNRANKED'} style={styles.tier} />
+        {/* Dynamic Glowing Rank Container Block */}
+        <FlexWidget 
+          style={{ 
+            ...styles.rankBadgeContainer, 
+            backgroundColor: rankTheme.bg, 
+            borderColor: rankTheme.border 
+          }}
+        >
+          <TextWidget text={rank.tier || 'UNRANKED'} style={{ ...styles.tier, color: rankTheme.text }} />
           <TextWidget text={`${rank.rr || 0} RR`} style={styles.rr} />
         </FlexWidget>
       </FlexWidget>
 
-      {/* Center Void: Translucent Map Watermark + 5 Match History Badges */}
-      <FlexWidget style={styles.middleContainer}>
-        <TextWidget 
-          text={(lastMatch?.map || 'VALORANT').toUpperCase()} 
-          style={styles.watermarkText} 
-        />
+      {/* Center Tactical Container: Left-Aligned Streak + Right-Aligned Bento Metrics Grid */}
+      <FlexWidget style={styles.tacticalSplitArea}>
         
-        <FlexWidget style={styles.streakRow}>
-          {streak && streak.length > 0 ? (
-            streak.map((won, idx) => (
-              <FlexWidget key={idx} style={won ? styles.badgeWin : styles.badgeLoss}>
-                <TextWidget text={won ? "W" : "L"} style={styles.badgeText} />
-              </FlexWidget>
-            ))
-          ) : (
-            <TextWidget text="No recent match data" style={styles.noStreakText} />
-          )}
+        {/* Left Side: Recent Form History Strip */}
+        <FlexWidget style={styles.leftStreakSection}>
+          <TextWidget text="FORM (LAST 5)" style={styles.bentoMiniLabel} />
+          <FlexWidget style={styles.streakVerticalBlock}>
+            {streak && streak.length > 0 ? (
+              streak.map((won, idx) => (
+                <FlexWidget key={idx} style={won ? styles.badgeWin : styles.badgeLoss}>
+                  <TextWidget text={won ? "W" : "L"} style={styles.badgeText} />
+                </FlexWidget>
+              ))
+            ) : (
+              <TextWidget text="--" style={styles.subtext} />
+            )}
+          </FlexWidget>
         </FlexWidget>
+
+        {/* Right Side: Advanced Performance Bento Dashboard Grid */}
+        <FlexWidget style={styles.rightBentoGrid}>
+          <FlexWidget style={styles.bentoRow}>
+            <FlexWidget style={styles.bentoBox}>
+              <TextWidget text="HS%" style={styles.bentoMiniLabel} />
+              <TextWidget text={`${lastMatch?.hsPercent ?? 0}%`} style={styles.bentoValueText} />
+            </FlexWidget>
+            <FlexWidget style={styles.bentoBox}>
+              <TextWidget text="ADR" style={styles.bentoMiniLabel} />
+              <TextWidget text={`${lastMatch?.adr ?? 0}`} style={styles.bentoValueText} />
+            </FlexWidget>
+          </FlexWidget>
+          
+          <FlexWidget style={styles.bentoBoxWide}>
+            <TextWidget text="ECON RATING" style={styles.bentoMiniLabel} />
+            <TextWidget text={`${lastMatch?.econRating ?? 0}`} style={styles.bentoValueText} />
+          </FlexWidget>
+        </FlexWidget>
+
       </FlexWidget>
 
       {/* Match Snapshot Section */}
@@ -91,7 +136,7 @@ const styles = {
     width: 'match_parent',
     backgroundColor: '#171717',
     borderRadius: 16,
-    padding: 16,
+    padding: 14,
     borderColor: '#262626',
     borderWidth: 1,
     justifyContent: 'space-between', 
@@ -140,70 +185,106 @@ const styles = {
     fontSize: 10,
     marginTop: 2,
   },
-  rightAlign: {
+  rankBadgeContainer: {
     flexDirection: 'column',
     alignItems: 'flex-end',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   tier: {
-    color: '#e5e5e5',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   rr: {
     color: '#a3a3a3',
-    fontSize: 12,
+    fontSize: 11,
+    marginTop: 1,
   },
-  middleContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 'match_parent',
-    marginVertical: 4,
-  },
-  watermarkText: {
-    color: '#222222', // Subtle gray contrast matching the dark #171717 theme
-    fontSize: 36,
-    fontWeight: 'bold',
-    letterSpacing: 6,
-    textAlign: 'center',
-  },
-  streakRow: {
+  tacticalSplitArea: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1,
     width: 'match_parent',
-    marginTop: -22, // Pulled slightly upward to overlap beautifully over the watermark text
+    marginVertical: 10,
+    justifyContent: 'space-between',
+  },
+  leftStreakSection: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingRight: 8,
+  },
+  streakVerticalBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
   },
   badgeWin: {
     backgroundColor: '#1b4332', 
     borderColor: '#4ade80',
     borderWidth: 1,
-    borderRadius: 6,
-    width: 26,
-    height: 26,
+    borderRadius: 5,
+    width: 22,
+    height: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 3,
+    marginRight: 4,
   },
   badgeLoss: {
     backgroundColor: '#641e16', 
     borderColor: '#f87171',
     borderWidth: 1,
-    borderRadius: 6,
-    width: 26,
-    height: 26,
+    borderRadius: 5,
+    width: 22,
+    height: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 3,
+    marginRight: 4,
   },
   badgeText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
   },
-  noStreakText: {
+  rightBentoGrid: {
+    flexDirection: 'column',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  bentoBox: {
+    backgroundColor: '#202020',
+    borderColor: '#2d2d2d',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 6,
+    flex: 1,
+    marginHorizontal: 2,
+  },
+  bentoBoxWide: {
+    backgroundColor: '#202020',
+    borderColor: '#2d2d2d',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 6,
+    marginHorizontal: 2,
+  },
+  bentoMiniLabel: {
     color: '#737373',
-    fontSize: 11,
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  bentoValueText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginTop: 1,
   },
   matchContainer: {
     flexDirection: 'row',
@@ -234,12 +315,12 @@ const styles = {
   },
   value: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   subtext: {
     color: '#a3a3a3',
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
   },
 };

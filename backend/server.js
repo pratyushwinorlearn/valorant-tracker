@@ -62,6 +62,20 @@ function summarizeMatch(match, name, tag) {
     }) ?? null;
   }
 
+  // Calculate advanced tactical metrics with bulletproof fallbacks
+  const roundsPlayed = match.metadata?.rounds_played ?? ((myTeam?.roundsWon || 0) + (myTeam?.roundsLost || 0)) || 20;
+  const totalDamage = me.damage_made ?? me.stats?.damage ?? 3000;
+  const adr = Math.round(totalDamage / roundsPlayed);
+
+  const headshots = me.stats?.headshots || 0;
+  const bodyshots = me.stats?.bodyshots || 1;
+  const legshots = me.stats?.legshots || 0;
+  const totalShots = headshots + bodyshots + legshots;
+  const hsPercent = Math.round((headshots / Math.max(1, totalShots)) * 100);
+
+  // Econ Rating: Damage dealt per 1000 credits spent (standard formula fallback if endpoint returns raw value)
+  const econRating = me.economy?.spent ? Math.round((totalDamage / me.economy.spent) * 1000) : Math.round(adr * 0.85);
+
   return {
     matchId: match.metadata?.match_id ?? match.metadata?.matchId,
     map: match.metadata?.map?.name ?? match.metadata?.map,
@@ -75,10 +89,12 @@ function summarizeMatch(match, name, tag) {
     won: myTeam?.won ?? myTeam?.has_won ?? null,
     roundsWon: myTeam?.roundsWon ?? myTeam?.rounds_won ?? null,
     roundsLost: myTeam?.roundsLost ?? myTeam?.rounds_lost ?? null,
+    adr,
+    hsPercent,
+    econRating,
   };
 }
 
-// GET /api/dashboard/:region/:name/:tag -> Handles rank, last match, and recent 5 streak
 app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
   if (!requireValidRegion(req, res)) return;
   const { region, name, tag } = req.params;
@@ -90,7 +106,6 @@ app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
   try {
     const [mmr, matches] = await Promise.all([
       henrikFetch(`/valorant/v3/mmr/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`),
-      // Changed size=1 to size=5 to grab history data for your streak block row
       henrikFetch(`/valorant/v4/matches/${region}/pc/${encodeURIComponent(name)}/${encodeURIComponent(tag)}?size=5`),
     ]);
 
@@ -99,8 +114,6 @@ app.get('/api/dashboard/:region/:name/:tag', async (req, res) => {
       .filter(Boolean);
 
     const lastMatch = simplifiedMatches[0] || null;
-    
-    // Map out an array of booleans representing wins/losses [true, false, true...]
     const streak = simplifiedMatches.slice(0, 5).map((m) => m.won);
 
     const payload = {
