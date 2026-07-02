@@ -81,6 +81,7 @@ export default function ValorantWidget({ dashboard }) {
         </FlexWidget>
 
         {/* Right Side: Advanced Performance Bento Dashboard Grid */}
+        {/* Right Side: Advanced Performance Bento Dashboard Grid */}
         <FlexWidget style={styles.rightBentoGrid}>
           <FlexWidget style={styles.bentoRow}>
             <FlexWidget style={styles.bentoBox}>
@@ -88,12 +89,12 @@ export default function ValorantWidget({ dashboard }) {
               <TextWidget text={`${lastMatch?.hsPercent ?? 0}%`} style={styles.bentoValueText} />
             </FlexWidget>
             <FlexWidget style={styles.bentoBox}>
-              <TextWidget text="ADR" style={styles.bentoMiniLabel} />
-              <TextWidget text={`${lastMatch?.adr ?? 0}`} style={styles.bentoValueText} />
+              <TextWidget text="ACS" style={styles.bentoMiniLabel} />
+              <TextWidget text={`${lastMatch?.acs ?? 0}`} style={styles.bentoValueText} />
             </FlexWidget>
             <FlexWidget style={styles.bentoBox}>
-              <TextWidget text="ECON" style={styles.bentoMiniLabel} />
-              <TextWidget text={`${lastMatch?.econRating ?? 0}`} style={styles.bentoValueText} />
+              <TextWidget text="KPR" style={styles.bentoMiniLabel} />
+              <TextWidget text={`${lastMatch?.kpr ?? 0}`} style={styles.bentoValueText} />
             </FlexWidget>
           </FlexWidget>
         </FlexWidget>
