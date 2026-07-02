@@ -63,7 +63,9 @@ function summarizeMatch(match, name, tag) {
   }
 
   // Calculate advanced tactical metrics with bulletproof fallbacks
-  const roundsPlayed = match.metadata?.rounds_played ?? ((myTeam?.roundsWon || 0) + (myTeam?.roundsLost || 0)) || 20;
+  const fallbackRounds = (myTeam?.roundsWon || 0) + (myTeam?.roundsLost || 0);
+  const roundsPlayed = match.metadata?.rounds_played || fallbackRounds || 20;
+  
   const totalDamage = me.damage_made ?? me.stats?.damage ?? 3000;
   const adr = Math.round(totalDamage / roundsPlayed);
 
@@ -73,7 +75,7 @@ function summarizeMatch(match, name, tag) {
   const totalShots = headshots + bodyshots + legshots;
   const hsPercent = Math.round((headshots / Math.max(1, totalShots)) * 100);
 
-  // Econ Rating: Damage dealt per 1000 credits spent (standard formula fallback if endpoint returns raw value)
+  // Econ Rating: Damage dealt per 1000 credits spent 
   const econRating = me.economy?.spent ? Math.round((totalDamage / me.economy.spent) * 1000) : Math.round(adr * 0.85);
 
   return {
